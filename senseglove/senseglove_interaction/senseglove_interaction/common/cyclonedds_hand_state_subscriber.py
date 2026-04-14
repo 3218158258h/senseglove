@@ -5,11 +5,16 @@ from __future__ import annotations
 from typing import Iterable, Optional
 
 import rclpy
-from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
 from senseglove_msgs.msg import SenseGloveState
+
+try:
+    from rclpy.executors import ExternalShutdownException
+except ImportError:
+    class ExternalShutdownException(Exception):
+        """Compatibility fallback when rclpy lacks ExternalShutdownException."""
 
 
 class CycloneDDSHandStateSubscriber(Node):
