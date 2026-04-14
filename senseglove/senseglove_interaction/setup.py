@@ -36,10 +36,10 @@ setup(
             # haptics nodes
             'haptics_node = senseglove_interaction.haptics.haptics_node:main',
             'nova2_vibration_node = senseglove_interaction.haptics.nova2_vibration_node:main',
-             # imu tf broadcaster
-             'imu_tf_broadcaster = senseglove_interaction.common.imu_tf_broadcaster:main',
-             # cyclonedds-compatible processed hand state subscriber
-             'cyclonedds_hand_state_subscriber = senseglove_interaction.common.cyclonedds_hand_state_subscriber:main',
+            # imu tf broadcaster
+            'imu_tf_broadcaster = senseglove_interaction.common.imu_tf_broadcaster:main',
+            # cyclonedds-compatible processed hand state subscriber
+            'cyclonedds_hand_state_subscriber = senseglove_interaction.common.cyclonedds_hand_state_subscriber:main',
          ],
      },
     data_files=[
