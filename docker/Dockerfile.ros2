@@ -1,0 +1,47 @@
+ARG ROS_DISTRO=jazzy
+FROM ubuntu:noble
+ARG ROS_DISTRO
+
+# 直接重写源！不再用 sed！
+RUN echo "deb http://mirrors.aliyun.com/ubuntu/ noble main restricted universe multiverse" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ noble-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ noble-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ noble-backports main restricted universe multiverse" >> /etc/apt/sources.list
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ROS_WORKSPACE=/root/workspace
+
+# 安装基础工具
+RUN apt-get update && apt-get install -y \
+    build-essential git wget curl gnupg lsb-release
+
+# 安装 ROS2 Jazzy 源
+RUN curl -sSL https://mirrors.ustc.edu.cn/ros2/ros.key | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] https://mirrors.ustc.edu.cn/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list
+
+# 安装全部依赖（修复变量）
+RUN apt-get update && apt-get install -y \
+        python3-pip python-is-python3 \
+        python3-colcon-common-extensions python3-rosdep python3-pyqt5 \
+        ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+        ros-jazzy-rmw-cyclonedds-cpp \
+        ros-jazzy-joint-state-publisher-gui \
+        ros-jazzy-xacro \
+        libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+        bluez libudev-dev udev \
+        libxcb-xinerama0 libxcb-cursor0 qtbase5-dev \
+        pkg-config tmux && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p ${ROS_WORKSPACE}/src
+WORKDIR ${ROS_WORKSPACE}
+
+RUN rosdep init || true && rosdep update
+
+RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
+RUN echo "source ${ROS_WORKSPACE}/install/setup.bash" >> /root/.bashrc
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

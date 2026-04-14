@@ -1,0 +1,28 @@
+services:
+  senseglove_ros:
+    dns:
+      - 223.5.5.5
+      - 8.8.8.8
+    build:
+      context: .
+      dockerfile: Dockerfile.ros2
+      args:
+        ROS_DISTRO: jazzy 
+    privileged: true
+    network_mode: host
+    ipc: host
+    volumes:
+      - ../:/root/workspace/src/senseglove_ros:rw
+      - ./entrypoint.sh:/entrypoint.sh:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - ROS_DISTRO=jazzy
+      - ROS_DOMAIN_ID=0
+      - XDG_RUNTIME_DIR=/tmp/runtime-root
+    group_add:
+      - dialout
+      - bluetooth 
+    tty: true
+    stdin_open: true

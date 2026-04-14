@@ -1,0 +1,615 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 0
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /Status1
+        - /Right Glove1
+        - /Left Glove1
+        - /TF1
+      Splitter Ratio: 0.5
+    Tree Height: 1068
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/ToolProperties
+    Expanded:
+      - /2D Pose Estimate1
+      - /2D Nav Goal1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.6
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+  - Class: rviz_common/Time
+    Experimental: false
+    Name: Time
+    SyncMode: 0
+    SyncSource: ""
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 10
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /senseglove/glove1/rh/robot_description
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        r_glove_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_index_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_index_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_index_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_index_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_middle_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_middle_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_middle_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_middle_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_palm_index:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_palm_pinky:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_palm_strap:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_pinky_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_pinky_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_pinky_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_pinky_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_ring_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_ring_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_ring_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_ring_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_thumb_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_thumb_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_thumb_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        r_thumb_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+      Mass Properties:
+        Inertia: false
+        Mass: false
+      Name: Right Glove
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /senseglove/glove0/lh/robot_description
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        l_glove_hub:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_index_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_index_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_index_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_index_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_middle_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_middle_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_middle_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_middle_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_palm_index:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_palm_pinky:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_palm_strap:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_pinky_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_pinky_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_pinky_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_pinky_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_ring_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_ring_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_ring_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_ring_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_thumb_brake:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_thumb_flexion_one:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_thumb_flexion_three:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        l_thumb_flexion_two:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        world:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+      Mass Properties:
+        Inertia: false
+        Mass: false
+      Name: Left Glove
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        l_glove_hub:
+          Value: true
+        l_index_brake:
+          Value: true
+        l_index_flexion_one:
+          Value: true
+        l_index_flexion_three:
+          Value: true
+        l_index_flexion_two:
+          Value: true
+        l_middle_brake:
+          Value: true
+        l_middle_flexion_one:
+          Value: true
+        l_middle_flexion_three:
+          Value: true
+        l_middle_flexion_two:
+          Value: true
+        l_palm_index:
+          Value: true
+        l_palm_pinky:
+          Value: true
+        l_palm_strap:
+          Value: true
+        l_pinky_brake:
+          Value: true
+        l_pinky_flexion_one:
+          Value: true
+        l_pinky_flexion_three:
+          Value: true
+        l_pinky_flexion_two:
+          Value: true
+        l_ring_brake:
+          Value: true
+        l_ring_flexion_one:
+          Value: true
+        l_ring_flexion_three:
+          Value: true
+        l_ring_flexion_two:
+          Value: true
+        l_thumb_brake:
+          Value: true
+        l_thumb_flexion_one:
+          Value: true
+        l_thumb_flexion_three:
+          Value: true
+        l_thumb_flexion_two:
+          Value: true
+        r_glove_hub:
+          Value: true
+        r_index_brake:
+          Value: true
+        r_index_flexion_one:
+          Value: true
+        r_index_flexion_three:
+          Value: true
+        r_index_flexion_two:
+          Value: true
+        r_middle_brake:
+          Value: true
+        r_middle_flexion_one:
+          Value: true
+        r_middle_flexion_three:
+          Value: true
+        r_middle_flexion_two:
+          Value: true
+        r_palm_index:
+          Value: true
+        r_palm_pinky:
+          Value: true
+        r_palm_strap:
+          Value: true
+        r_pinky_brake:
+          Value: true
+        r_pinky_flexion_one:
+          Value: true
+        r_pinky_flexion_three:
+          Value: true
+        r_pinky_flexion_two:
+          Value: true
+        r_ring_brake:
+          Value: true
+        r_ring_flexion_one:
+          Value: true
+        r_ring_flexion_three:
+          Value: true
+        r_ring_flexion_two:
+          Value: true
+        r_thumb_brake:
+          Value: true
+        r_thumb_flexion_one:
+          Value: true
+        r_thumb_flexion_three:
+          Value: true
+        r_thumb_flexion_two:
+          Value: true
+        world:
+          Value: true
+      Marker Scale: 0.10000000149011612
+      Name: TF
+      Show Arrows: true
+      Show Axes: false
+      Show Names: false
+      Tree:
+        world:
+          l_glove_hub:
+            l_index_brake:
+              l_index_flexion_one:
+                l_index_flexion_two:
+                  l_index_flexion_three:
+                    {}
+            l_middle_brake:
+              l_middle_flexion_one:
+                l_middle_flexion_two:
+                  l_middle_flexion_three:
+                    {}
+            l_palm_index:
+              {}
+            l_palm_pinky:
+              {}
+            l_palm_strap:
+              {}
+            l_pinky_brake:
+              l_pinky_flexion_one:
+                l_pinky_flexion_two:
+                  l_pinky_flexion_three:
+                    {}
+            l_ring_brake:
+              l_ring_flexion_one:
+                l_ring_flexion_two:
+                  l_ring_flexion_three:
+                    {}
+            l_thumb_brake:
+              l_thumb_flexion_one:
+                l_thumb_flexion_two:
+                  l_thumb_flexion_three:
+                    {}
+          r_glove_hub:
+            r_index_brake:
+              r_index_flexion_one:
+                r_index_flexion_two:
+                  r_index_flexion_three:
+                    {}
+            r_middle_brake:
+              r_middle_flexion_one:
+                r_middle_flexion_two:
+                  r_middle_flexion_three:
+                    {}
+            r_palm_index:
+              {}
+            r_palm_pinky:
+              {}
+            r_palm_strap:
+              {}
+            r_pinky_brake:
+              r_pinky_flexion_one:
+                r_pinky_flexion_two:
+                  r_pinky_flexion_three:
+                    {}
+            r_ring_brake:
+              r_ring_flexion_one:
+                r_ring_flexion_two:
+                  r_ring_flexion_three:
+                    {}
+            r_thumb_brake:
+              r_thumb_flexion_one:
+                r_thumb_flexion_two:
+                  r_thumb_flexion_three:
+                    {}
+      Update Interval: 0
+      Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: world
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetInitialPose
+      Covariance x: 0.25
+      Covariance y: 0.25
+      Covariance yaw: 0.06853891909122467
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose
+    - Class: rviz_default_plugins/SetGoal
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /goal_pose
+    - Class: rviz_default_plugins/PublishPoint
+      Single click: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /clicked_point
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 1.8349801301956177
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0.4000000059604645
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.30000001192092896
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz_default_plugins)
+      Yaw: 4.699999809265137
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 2166
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd00000002000000000000047a000007d6fc0200000004fb000000100044006900730070006c00610079007301000000700000049e0000018600fffffffb0000001200530065006c0065006300740069006f006e010000051a0000023a000000b200fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007300000002d6000000e6000000d600fffffffb0000000800540069006d00650100000760000000e60000005e00ffffff00000001000001c9000007d6fc0200000001fb0000000a005600690065007700730100000070000007d60000013800ffffff0000092b000007d600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Time:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 3974
+  X: 122
+  Y: 64

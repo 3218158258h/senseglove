@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="nova2">
+
+  <xacro:arg name="prefix" default="" />
+  <xacro:arg name="selected_robot" default="nova2_right" />
+  <xacro:arg name="is_right" default="true" />
+  <xacro:arg name="glove_serial" default=""/>
+  <xacro:arg name="publish_rate" default="60" />
+
+  <!-- Import Nova2 Description Macro -->
+  <xacro:include filename="$(find senseglove_description)/urdf/nova2/nova2_right.description.xacro" />
+
+  <!-- Import Nova2 ros2_control Macro -->
+  <xacro:include filename="$(find senseglove_description)/ros2_control/nova2/nova2_right.ros2_control.xacro" />
+
+  <!-- Used for fixing robot -->
+  <link name="world"/>
+
+  <xacro:nova2_right parent="world" prefix="$(arg prefix)" />
+
+  <xacro:nova2_right_ros2_control name="Nova2RightControl" prefix="$(arg prefix)" selected_robot="$(arg selected_robot)" is_right="$(arg is_right)" glove_serial="$(arg glove_serial)" publish_rate="$(arg publish_rate)" />
+
+</robot>

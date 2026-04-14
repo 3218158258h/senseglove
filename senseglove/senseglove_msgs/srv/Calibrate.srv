@@ -1,0 +1,5 @@
+# Calibrate.srv
+# A service to request calibration of a named profile
+string name  # Optional: name for this calibration profile
+---
+bool success

@@ -1,0 +1,14 @@
+# types : dk1, nova, nova2
+# side  : left, right
+# serial: "01000", "01001", ...
+# finger_distance: true, false
+
+gloves:
+  - type: nova2
+    side: left
+    serial: "01001"
+    finger_distance: false
+  - type: nova2
+    side: right
+    serial: "01002"
+    finger_distance: false
