@@ -12,9 +12,10 @@ from senseglove_msgs.msg import SenseGloveState
 
 try:
     from rclpy.executors import ExternalShutdownException
+    _HAS_EXTERNAL_SHUTDOWN_EXCEPTION = True
 except ImportError:
-    class ExternalShutdownException(Exception):
-        """Compatibility fallback when rclpy lacks ExternalShutdownException."""
+    ExternalShutdownException = None
+    _HAS_EXTERNAL_SHUTDOWN_EXCEPTION = False
 
 
 class CycloneDDSHandStateSubscriber(Node):
@@ -31,7 +32,8 @@ class CycloneDDSHandStateSubscriber(Node):
         glove_serial = (
             self.get_parameter("glove_serial").get_parameter_value().string_value.strip()
         )
-        hand = self.get_parameter("hand").get_parameter_value().string_value.strip().lower()
+        hand_param = self.get_parameter("hand").get_parameter_value()
+        hand = hand_param.string_value.strip().lower()
         print_hz = self.get_parameter("print_hz").get_parameter_value().double_value
         self._show_all_hand_joints = (
             self.get_parameter("show_all_hand_joints").get_parameter_value().bool_value
@@ -144,8 +146,13 @@ def main(args=None) -> None:
     node = CycloneDDSHandStateSubscriber()
     try:
         rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
+    except KeyboardInterrupt:
         pass
+    except Exception as exc:
+        if _HAS_EXTERNAL_SHUTDOWN_EXCEPTION and isinstance(exc, ExternalShutdownException):
+            pass
+        else:
+            raise
     finally:
         node.destroy_node()
         if rclpy.ok():
