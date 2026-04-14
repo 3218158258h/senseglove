@@ -40,8 +40,8 @@ setup(
             'imu_tf_broadcaster = senseglove_interaction.common.imu_tf_broadcaster:main',
             # cyclonedds-compatible processed hand state subscriber
             'cyclonedds_hand_state_subscriber = senseglove_interaction.common.cyclonedds_hand_state_subscriber:main',
-         ],
-     },
+        ],
+    },
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
