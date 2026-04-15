@@ -283,7 +283,7 @@ return_type SenseGloveHardwareInterface::read(const rclcpp::Time&, const rclcpp:
     if (robot_->getNova2NormalizedInput(normalized_values))
     {
       std_msgs::msg::Float32MultiArray msg;
-      msg.data.assign(normalized_values.begin(), normalized_values.end());
+      msg.data = std::move(normalized_values);
       normalized_sensor_pub_->publish(msg);
     }
   }
