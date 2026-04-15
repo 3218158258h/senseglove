@@ -21,6 +21,7 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(controller_interface REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(senseglove_hardware REQUIRED)
 find_package(senseglove_hardware_builder REQUIRED)
 find_package(senseglove_msgs REQUIRED)
@@ -65,6 +66,7 @@ ament_target_dependencies(${PROJECT_NAME}
         rclcpp_lifecycle
         hardware_interface
         pluginlib
+        std_msgs
         senseglove_hardware
         senseglove_hardware_builder
         senseglove_msgs
@@ -104,6 +106,12 @@ install(TARGETS ${PROJECT_NAME}
 # Export ament package
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
-ament_export_dependencies(hardware_interface pluginlib senseglove_hardware_builder senseglove_msgs)
+ament_export_dependencies(
+        hardware_interface
+        pluginlib
+        std_msgs
+        senseglove_hardware_builder
+        senseglove_msgs
+)
 
 ament_package()

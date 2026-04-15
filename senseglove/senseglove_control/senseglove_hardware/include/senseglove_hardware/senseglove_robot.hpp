@@ -153,6 +153,7 @@ public:
   SGCore::Kinematics::Vect3D getHandPosition(int jointIndex) const;
   SGCore::Kinematics::Vect3D getFingerTip(int fingerIndex) const;
   bool getImuRotation(SGCore::Kinematics::Quat& outIMU) const;
+  bool getNova2NormalizedInput(std::vector<float>& outNormalizedValues) const;
   const std::shared_ptr<urdf::Model>& getUrdf() const noexcept
   {
     return urdfModel_;

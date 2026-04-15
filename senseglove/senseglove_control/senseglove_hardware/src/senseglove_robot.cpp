@@ -177,6 +177,14 @@ bool SenseGloveRobot::getImuRotation(SGCore::Kinematics::Quat& outIMU) const
   return hapticglove_->GetImuRotation(outIMU);
 }
 
+bool SenseGloveRobot::getNova2NormalizedInput(std::vector<float>& outNormalizedValues) const
+{
+  if (gloveType_ != GloveType::Nova2 || !nova2glovePtr_)
+    return false;
+
+  return nova2glovePtr_->GetNormalizedInput(outNormalizedValues);
+}
+
 void SenseGloveRobot::queueEffort(const std::vector<double>& effortCommand)
 {
   const size_t copySize = std::min(effortCommand.size(), effortLevels_.size());
