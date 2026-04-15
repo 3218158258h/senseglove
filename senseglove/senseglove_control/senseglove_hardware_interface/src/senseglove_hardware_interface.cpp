@@ -284,6 +284,11 @@ return_type SenseGloveHardwareInterface::read(const rclcpp::Time&, const rclcpp:
     {
       std_msgs::msg::Float32MultiArray msg;
       msg.data = std::move(normalized_values);
+      msg.layout.dim.resize(1);
+      msg.layout.dim[0].label = "nova2_normalized_input";
+      msg.layout.dim[0].size = static_cast<uint32_t>(msg.data.size());
+      msg.layout.dim[0].stride = static_cast<uint32_t>(msg.data.size());
+      msg.layout.data_offset = 0U;
       normalized_sensor_pub_->publish(msg);
     }
   }
