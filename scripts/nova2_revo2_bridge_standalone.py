@@ -190,8 +190,13 @@ class Nova2SensorReader:
 def nova2_to_revo2(values: list[float]) -> list[int]:
     """Map 6 normalised Nova2 values (0-1) → Revo2 positions (0-1000).
 
-    All channels use a direct (forward) mapping: revo2 = nova2 * 1000
+    Nova2 convention: 0 = finger fully extended (open), 1 = fully flexed (fist).
+    Revo2 convention: 0 = fist (closed),            1000 = fully open.
+    Therefore the mapping must be INVERTED: revo2 = (1 - nova2) * 1000.
     """
+
+    def inv(v: float) -> int:
+        return int((1.0 - max(0.0, min(1.0, v))) * 1000)
 
     def fwd(v: float) -> int:
         return int(max(0.0, min(1.0, v)) * 1000)
@@ -200,12 +205,12 @@ def nova2_to_revo2(values: list[float]) -> list[int]:
         values = list(values) + [0.0] * (6 - len(values))
 
     return [
-        fwd(values[1]),  # [0] 大拇指Flex  ← Thumb FlexionProximal (direct)
-        fwd(values[0]),  # [1] 大拇指Aux   ← Thumb Abduction       (direct)
-        fwd(values[3]),  # [2] 食指        ← Index FlexionDistal   (direct)
-        fwd(values[4]),  # [3] 中指        ← Middle Flexion        (direct)
-        fwd(values[5]),  # [4] 无名指      ← Ring Flexion          (direct)
-        fwd(values[5]),  # [5] 小拇指      ← Ring Flexion          (direct)
+        inv(values[1]),  # [0] 大拇指Flex  ← Thumb FlexionProximal (inverted)
+        fwd(values[0]),  # [1] 大拇指Aux   ← Thumb Abduction       (direct: 0=adducted, 1=spread)
+        inv(values[3]),  # [2] 食指        ← Index FlexionDistal   (inverted)
+        inv(values[4]),  # [3] 中指        ← Middle Flexion        (inverted)
+        inv(values[5]),  # [4] 无名指      ← Ring Flexion          (inverted)
+        inv(values[5]),  # [5] 小拇指      ← Ring Flexion          (inverted)
     ]
 
 
@@ -238,15 +243,16 @@ async def control_loop(
         rh_pos = nova2_to_revo2(rh_raw)
         lh_pos = nova2_to_revo2(lh_raw)
 
-        # Print raw glove sensor values so you can verify the glove is streaming
+        # Print raw glove sensor values so you can verify the glove is streaming.
+        # Use print() directly – libstark.init_logging() may raise the logger
+        # threshold above INFO, silencing logger.info() calls.
         rh_fmt     = " ".join(f"{v:.3f}" for v in rh_raw)
         lh_fmt     = " ".join(f"{v:.3f}" for v in lh_raw)
         rh_hw_fmt  = " ".join(f"{v:.3f}" for v in rh_raw_hw)
         lh_hw_fmt  = " ".join(f"{v:.3f}" for v in lh_raw_hw)
-        logger.info("GLOVE norm  RH[%s]  LH[%s]  |  state RH=%s LH=%s",
-                    rh_fmt, lh_fmt, rh_norm_state[1], lh_norm_state[1])
-        logger.info("GLOVE raw   RH[%s]  LH[%s]", rh_hw_fmt, lh_hw_fmt)
-        logger.info("REVO2 pos   RH%s  LH%s", rh_pos, lh_pos)
+        print(f"GLOVE norm  RH[{rh_fmt}]  LH[{lh_fmt}]  |  state RH={rh_norm_state[1]} LH={lh_norm_state[1]}", flush=True)
+        print(f"GLOVE raw   RH[{rh_hw_fmt}]  LH[{lh_hw_fmt}]", flush=True)
+        print(f"REVO2 pos   RH{rh_pos}  LH{lh_pos}", flush=True)
 
         try:
             await asyncio.gather(
