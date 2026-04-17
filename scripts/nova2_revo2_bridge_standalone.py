@@ -69,6 +69,20 @@ class Nova2SensorReader:
             self._lib = ctypes.CDLL(lib_path)
         except OSError as exc:
             msg = str(exc)
+            if "undefined symbol" in msg:
+                raise OSError(
+                    f"\n"
+                    f"  Cannot load {lib_path}: {msg}\n"
+                    f"\n"
+                    f"  C++ ABI mismatch: the SenseGlove-API-master v22 libs were compiled\n"
+                    f"  with Clang/libc++ (std::__1 ABI). The wrapper must be compiled with\n"
+                    f"  the same ABI.  Rebuild using clang++ + libc++:\n"
+                    f"\n"
+                    f"      # Ubuntu: apt install clang libc++-dev libc++abi-dev\n"
+                    f"      cd <repo_root>/scripts && make clean && make\n"
+                    f"\n"
+                    f"  Do NOT compile with plain g++ – it uses libstdc++ (different ABI).\n"
+                ) from exc
             if "GLIBC_" in msg:
                 import re
                 versions = re.findall(r"GLIBC_[\d.]+", msg)

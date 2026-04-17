@@ -12,12 +12,16 @@
 FROM ubuntu:22.04
 
 # ── System packages ────────────────────────────────────────────────────────────
+# clang + libc++ are required: the v22 SenseGlove libs were compiled with
+# Clang/libc++ (std::__1 ABI).  Using g++/libstdc++ produces mismatched symbol
+# names and "undefined symbol" errors at runtime.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        g++ \
+        clang \
+        libc++-dev \
+        libc++abi-dev \
         make \
         python3 \
         python3-pip \
-        libstdc++6 \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 

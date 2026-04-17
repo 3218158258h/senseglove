@@ -8,12 +8,17 @@
 #   make clean    – remove build artefacts
 #
 # Prerequisites:
-#   g++ (C++17), the SenseGlove SDK libs and headers present at the paths
-#   configured below.
+#   clang++ + libc++ (Ubuntu: apt install clang libc++-dev libc++abi-dev)
+#
+# ABI note: SenseGlove-API-master/lib/linux/v22 libs were compiled with
+# Clang/libc++ (symbols use the std::__1 namespace).  The wrapper MUST also
+# be compiled with clang++ -stdlib=libc++ so that std::vector<float> in the
+# Nova2Glove API call sites resolves to the same mangled names.  Using g++
+# (libstdc++) produces different mangled names → "undefined symbol" at runtime.
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 # Defaults use the SenseGlove-API-master v22 libs (requires only GLIBC_2.17,
-# compatible with Ubuntu 22.04).  Override on the command line if needed, e.g.:
+# compatible with Ubuntu 22.04+).  Override on the command line if needed, e.g.:
 #   make SDK_LIB_DIR=/path/to/other/libs
 REPO_ROOT   ?= $(shell realpath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 SDK_INCLUDE ?= $(REPO_ROOT)/SenseGlove-API-master/include/SenseGlove/Core
@@ -21,10 +26,12 @@ SDK_LIB_DIR ?= $(REPO_ROOT)/SenseGlove-API-master/lib/linux/v22/x86-64/release
 OUT_DIR     ?= $(dir $(lastword $(MAKEFILE_LIST)))
 
 # ── Compiler flags ───────────────────────────────────────────────────────────
-CXX      := g++
-CXXFLAGS := -std=c++17 -O2 -fPIC -Wall -Wextra \
+# clang++ with libc++ is required to match the ABI of the v22 prebuilt libs.
+CXX      := clang++
+CXXFLAGS := -std=c++17 -stdlib=libc++ -O2 -fPIC -Wall -Wextra \
             -I$(SDK_INCLUDE)
 LDFLAGS  := -shared \
+            -stdlib=libc++ \
             -L$(SDK_LIB_DIR) \
             -lsgcore -lsgconnect \
             -Wl,-rpath,$(SDK_LIB_DIR) \
