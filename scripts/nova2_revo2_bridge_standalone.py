@@ -254,6 +254,28 @@ async def control_loop(
         print(f"GLOVE raw   RH[{rh_hw_fmt}]  LH[{lh_hw_fmt}]", flush=True)
         print(f"REVO2 pos   RH{rh_pos}  LH{lh_pos}", flush=True)
 
+        # ENormalizationState: 5 = NormalizationFinished.
+        # In any other state (especially 2 = SendingRawData) the SDK returns
+        # raw-ADC values clamped to [0, 1] – these are NOT real finger angles.
+        # Sending those bogus values to Revo2 causes a fist on startup.
+        # Wait until both gloves have finished normalization before commanding.
+        _NORM_FINISHED = 5
+        rh_ready = (rh_norm_state[0] == _NORM_FINISHED)
+        lh_ready = (lh_norm_state[0] == _NORM_FINISHED)
+        if not rh_ready or not lh_ready:
+            waiting = []
+            if not rh_ready:
+                waiting.append(f"RH({rh_norm_state[1]})")
+            if not lh_ready:
+                waiting.append(f"LH({lh_norm_state[1]})")
+            print(
+                f"[WAITING] Glove(s) not yet normalized: {', '.join(waiting)}. "
+                "Open SenseCom → calibrate glove → confirm, then re-run.",
+                flush=True,
+            )
+            await asyncio.sleep(interval)
+            continue
+
         try:
             await asyncio.gather(
                 client_right.set_finger_positions_and_speeds(RIGHT_ID, rh_pos, SPEEDS),
