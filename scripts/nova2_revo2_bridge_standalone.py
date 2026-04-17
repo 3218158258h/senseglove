@@ -76,11 +76,17 @@ class Nova2SensorReader:
                 raise OSError(
                     f"\n"
                     f"  Cannot load {lib_path}\n"
-                    f"  Required: {required}  (Ubuntu 24.04 / glibc 2.39+)\n"
+                    f"  Required: {required}\n"
                     f"  Your system glibc is too old.\n"
                     f"\n"
-                    f"  → Run inside Docker instead:\n"
-                    f"      cd scripts && bash run_docker.sh\n"
+                    f"  The Makefile defaults to SenseGlove-API-master/lib/linux/v22 libs\n"
+                    f"  (requires only GLIBC_2.17, compatible with Ubuntu 22.04+).\n"
+                    f"  Rebuild the wrapper:\n"
+                    f"      cd <repo_root>/scripts && make\n"
+                    f"\n"
+                    f"  If you built with the old senseglove_api Ubuntu libs (requires\n"
+                    f"  GLIBC_2.38/2.39), run inside Docker instead:\n"
+                    f"      bash scripts/run_docker.sh\n"
                 ) from exc
             raise
 

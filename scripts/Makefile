@@ -11,10 +11,13 @@
 #   g++ (C++17), the SenseGlove SDK libs and headers present at the paths
 #   configured below.
 
-# ── Paths (adjust if the repo is checked out elsewhere) ─────────────────────
+# ── Paths ─────────────────────────────────────────────────────────────────────
+# Defaults use the SenseGlove-API-master v22 libs (requires only GLIBC_2.17,
+# compatible with Ubuntu 22.04).  Override on the command line if needed, e.g.:
+#   make SDK_LIB_DIR=/path/to/other/libs
 REPO_ROOT   ?= $(shell realpath $(dir $(lastword $(MAKEFILE_LIST)))/..)
-SDK_INCLUDE ?= $(REPO_ROOT)/senseglove_api/include/SenseGlove/Core
-SDK_LIB_DIR ?= $(REPO_ROOT)/senseglove_api/lib/Ubuntu/x86-64/release
+SDK_INCLUDE ?= $(REPO_ROOT)/SenseGlove-API-master/include/SenseGlove/Core
+SDK_LIB_DIR ?= $(REPO_ROOT)/SenseGlove-API-master/lib/linux/v22/x86-64/release
 OUT_DIR     ?= $(dir $(lastword $(MAKEFILE_LIST)))
 
 # ── Compiler flags ───────────────────────────────────────────────────────────
@@ -23,7 +26,7 @@ CXXFLAGS := -std=c++17 -O2 -fPIC -Wall -Wextra \
             -I$(SDK_INCLUDE)
 LDFLAGS  := -shared \
             -L$(SDK_LIB_DIR) \
-            -lsgcore -lsgconnect -lserial \
+            -lsgcore -lsgconnect \
             -Wl,-rpath,$(SDK_LIB_DIR) \
             -lpthread
 
