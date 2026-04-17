@@ -23,19 +23,18 @@ Sensor layout  (nova2_sensor_api returns 6 floats, 0.0 – 1.0):
    [5]  Ring    Flexion          ← shared for ring AND pinky
 
 Revo2 6-DOF positions  (0 = fist, 1000 = fully open):
-   [0]  大拇指Flex  ← nova2[1] inverted
+   [0]  大拇指Flex  ← nova2[1] direct
    [1]  大拇指Aux   ← nova2[0] direct
-   [2]  食指        ← nova2[3] inverted
-   [3]  中指        ← nova2[4] inverted
-   [4]  无名指      ← nova2[5] inverted
-   [5]  小拇指      ← nova2[5] inverted
+   [2]  食指        ← nova2[3] direct
+   [3]  中指        ← nova2[4] direct
+   [4]  无名指      ← nova2[5] direct
+   [5]  小拇指      ← nova2[5] direct
 """
 
 import asyncio
 import ctypes
 import os
 import sys
-import time
 
 from revo2_utils import logger, libstark
 from utils import setup_shutdown_event
@@ -116,36 +115,29 @@ class Nova2SensorReader:
             ctypes.POINTER(ctypes.c_int),
         ]
 
-        self._buf = (ctypes.c_float * 6)()
-        self._len = ctypes.c_int(0)
-
     def sensecom_running(self) -> bool:
         return bool(self._lib.nova2_sensecom_running())
 
     def get_normalized(self, right_hand: bool) -> list[float]:
         """Return a list of 6 floats (0-1), or [0]*6 if the glove is unavailable."""
+        buf = (ctypes.c_float * 6)()
+        length = ctypes.c_int(0)
         ok = self._lib.nova2_get_normalized_input(
             1 if right_hand else 0,
-            self._buf,
-            ctypes.byref(self._len),
+            buf,
+            ctypes.byref(length),
         )
-        if not ok or self._len.value == 0:
+        if not ok or length.value == 0:
             return [0.0] * 6
-        return list(self._buf[: self._len.value])
+        return list(buf[: length.value])
 
 
 # ── Sensor → Revo2 conversion ─────────────────────────────────────────────────
 def nova2_to_revo2(values: list[float]) -> list[int]:
     """Map 6 normalised Nova2 values (0-1) → Revo2 positions (0-1000).
 
-    Nova2 flexion convention:  0 = straight/open,  1 = fully flexed/closed
-    Revo2 position convention: 0 = fist,           1000 = fully open
-    → flexion channels are inverted: revo2 = (1 - nova2) * 1000
-    → abduction is direct:           revo2 = nova2 * 1000
+    All channels use a direct (forward) mapping: revo2 = nova2 * 1000
     """
-
-    def inv(v: float) -> int:
-        return int(max(0.0, min(1.0, 1.0 - v)) * 1000)
 
     def fwd(v: float) -> int:
         return int(max(0.0, min(1.0, v)) * 1000)
@@ -154,12 +146,12 @@ def nova2_to_revo2(values: list[float]) -> list[int]:
         values = list(values) + [0.0] * (6 - len(values))
 
     return [
-        inv(values[1]),  # [0] 大拇指Flex  ← Thumb FlexionProximal (inverted)
+        fwd(values[1]),  # [0] 大拇指Flex  ← Thumb FlexionProximal (direct)
         fwd(values[0]),  # [1] 大拇指Aux   ← Thumb Abduction       (direct)
-        inv(values[3]),  # [2] 食指        ← Index FlexionDistal   (inverted)
-        inv(values[4]),  # [3] 中指        ← Middle Flexion        (inverted)
-        inv(values[5]),  # [4] 无名指      ← Ring Flexion          (inverted)
-        inv(values[5]),  # [5] 小拇指      ← Ring Flexion          (inverted)
+        fwd(values[3]),  # [2] 食指        ← Index FlexionDistal   (direct)
+        fwd(values[4]),  # [3] 中指        ← Middle Flexion        (direct)
+        fwd(values[5]),  # [4] 无名指      ← Ring Flexion          (direct)
+        fwd(values[5]),  # [5] 小拇指      ← Ring Flexion          (direct)
     ]
 
 
@@ -172,10 +164,17 @@ async def control_loop(
 ) -> None:
     interval = 1.0 / CONTROL_HZ
     logger.info("Control loop started at %d Hz", CONTROL_HZ)
+    loop = asyncio.get_running_loop()
 
     while not shutdown_event.is_set():
-        rh_raw = reader.get_normalized(right_hand=True)
-        lh_raw = reader.get_normalized(right_hand=False)
+        # Run blocking ctypes calls in a thread pool so the asyncio event loop
+        # remains free to process Revo2 serial I/O.  Without this, GIL-holding
+        # ctypes calls would starve the Modbus transport layer, causing every
+        # set_finger_positions_and_speeds call after the first to time out.
+        rh_raw, lh_raw = await asyncio.gather(
+            loop.run_in_executor(None, reader.get_normalized, True),
+            loop.run_in_executor(None, reader.get_normalized, False),
+        )
         rh_pos = nova2_to_revo2(rh_raw)
         lh_pos = nova2_to_revo2(lh_raw)
 
