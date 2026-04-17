@@ -178,7 +178,11 @@ async def control_loop(
         rh_pos = nova2_to_revo2(rh_raw)
         lh_pos = nova2_to_revo2(lh_raw)
 
-        logger.debug("RH %s  LH %s", rh_pos, lh_pos)
+        # Print raw glove sensor values so you can verify the glove is streaming
+        rh_fmt = " ".join(f"{v:.3f}" for v in rh_raw)
+        lh_fmt = " ".join(f"{v:.3f}" for v in lh_raw)
+        logger.info("GLOVE raw  RH[%s]  LH[%s]", rh_fmt, lh_fmt)
+        logger.info("REVO2 pos  RH%s  LH%s", rh_pos, lh_pos)
 
         try:
             await asyncio.gather(
