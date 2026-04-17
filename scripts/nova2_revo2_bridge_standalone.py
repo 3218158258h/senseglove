@@ -107,6 +107,10 @@ class Nova2SensorReader:
         self._lib.nova2_sensecom_running.restype  = ctypes.c_int
         self._lib.nova2_sensecom_running.argtypes = []
 
+        # int nova2_send_normalized_data(int right_hand)
+        self._lib.nova2_send_normalized_data.restype  = ctypes.c_int
+        self._lib.nova2_send_normalized_data.argtypes = [ctypes.c_int]
+
         # int nova2_get_normalized_input(int right_hand, float* out, int* out_len)
         self._lib.nova2_get_normalized_input.restype  = ctypes.c_int
         self._lib.nova2_get_normalized_input.argtypes = [
@@ -115,14 +119,64 @@ class Nova2SensorReader:
             ctypes.POINTER(ctypes.c_int),
         ]
 
+        # int nova2_get_normalization_state(int right_hand)
+        self._lib.nova2_get_normalization_state.restype  = ctypes.c_int
+        self._lib.nova2_get_normalization_state.argtypes = [ctypes.c_int]
+
+        # int nova2_get_raw_sensor_data(int right_hand, float* out, int* out_len)
+        self._lib.nova2_get_raw_sensor_data.restype  = ctypes.c_int
+        self._lib.nova2_get_raw_sensor_data.argtypes = [
+            ctypes.c_int,
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.POINTER(ctypes.c_int),
+        ]
+
     def sensecom_running(self) -> bool:
         return bool(self._lib.nova2_sensecom_running())
+
+    def send_normalized_data(self, right_hand: bool) -> bool:
+        """Command the glove to start streaming normalised data. Call once at startup."""
+        return bool(self._lib.nova2_send_normalized_data(1 if right_hand else 0))
 
     def get_normalized(self, right_hand: bool) -> list[float]:
         """Return a list of 6 floats (0-1), or [0]*6 if the glove is unavailable."""
         buf = (ctypes.c_float * 6)()
         length = ctypes.c_int(0)
         ok = self._lib.nova2_get_normalized_input(
+            1 if right_hand else 0,
+            buf,
+            ctypes.byref(length),
+        )
+        if not ok or length.value == 0:
+            return [0.0] * 6
+        return list(buf[: length.value])
+
+    # Normalization state codes (ENormalizationState in NormalizationState.hpp):
+    _NORM_STATE_NAMES = {
+        -1: "GLOVE_NOT_FOUND",
+        -2: "SENSOR_DATA_UNAVAILABLE",
+        1:  "Unknown",
+        2:  "SendingRawData",
+        3:  "Normalizing_MoveFingers",
+        4:  "Normalizing_AwaitConfirm",
+        5:  "NormalizationFinished",
+    }
+
+    def get_normalization_state(self, right_hand: bool) -> tuple[int, str]:
+        """Return (code, name) for the current normalization state of the glove."""
+        code = self._lib.nova2_get_normalization_state(1 if right_hand else 0)
+        name = self._NORM_STATE_NAMES.get(code, f"state_{code}")
+        return code, name
+
+    def get_raw_sensor_data(self, right_hand: bool) -> list[float]:
+        """Return 6 raw sensor values from GetSensorData (bypasses normalization).
+
+        Values are NOT guaranteed to be in [0, 1] when the glove has not finished
+        normalization.  Use to verify the glove hardware is live.
+        """
+        buf = (ctypes.c_float * 6)()
+        length = ctypes.c_int(0)
+        ok = self._lib.nova2_get_raw_sensor_data(
             1 if right_hand else 0,
             buf,
             ctypes.byref(length),
@@ -171,18 +225,28 @@ async def control_loop(
         # remains free to process Revo2 serial I/O.  Without this, GIL-holding
         # ctypes calls would starve the Modbus transport layer, causing every
         # set_finger_positions_and_speeds call after the first to time out.
-        rh_raw, lh_raw = await asyncio.gather(
-            loop.run_in_executor(None, reader.get_normalized, True),
-            loop.run_in_executor(None, reader.get_normalized, False),
+        rh_raw, lh_raw, rh_raw_hw, lh_raw_hw, rh_norm_state, lh_norm_state = (
+            await asyncio.gather(
+                loop.run_in_executor(None, reader.get_normalized, True),
+                loop.run_in_executor(None, reader.get_normalized, False),
+                loop.run_in_executor(None, reader.get_raw_sensor_data, True),
+                loop.run_in_executor(None, reader.get_raw_sensor_data, False),
+                loop.run_in_executor(None, reader.get_normalization_state, True),
+                loop.run_in_executor(None, reader.get_normalization_state, False),
+            )
         )
         rh_pos = nova2_to_revo2(rh_raw)
         lh_pos = nova2_to_revo2(lh_raw)
 
         # Print raw glove sensor values so you can verify the glove is streaming
-        rh_fmt = " ".join(f"{v:.3f}" for v in rh_raw)
-        lh_fmt = " ".join(f"{v:.3f}" for v in lh_raw)
-        logger.info("GLOVE raw  RH[%s]  LH[%s]", rh_fmt, lh_fmt)
-        logger.info("REVO2 pos  RH%s  LH%s", rh_pos, lh_pos)
+        rh_fmt     = " ".join(f"{v:.3f}" for v in rh_raw)
+        lh_fmt     = " ".join(f"{v:.3f}" for v in lh_raw)
+        rh_hw_fmt  = " ".join(f"{v:.3f}" for v in rh_raw_hw)
+        lh_hw_fmt  = " ".join(f"{v:.3f}" for v in lh_raw_hw)
+        logger.info("GLOVE norm  RH[%s]  LH[%s]  |  state RH=%s LH=%s",
+                    rh_fmt, lh_fmt, rh_norm_state[1], lh_norm_state[1])
+        logger.info("GLOVE raw   RH[%s]  LH[%s]", rh_hw_fmt, lh_hw_fmt)
+        logger.info("REVO2 pos   RH%s  LH%s", rh_pos, lh_pos)
 
         try:
             await asyncio.gather(
@@ -217,6 +281,12 @@ async def main_async(reader: Nova2SensorReader) -> None:
 
     logger.info("Left  hand: %s", left_info.description)
     logger.info("Right hand: %s", right_info.description)
+
+    # Command both gloves to start streaming normalised sensor data.
+    # Without this the SDK may return stale/default values instead of live readings.
+    for hand_name, is_right in (("right", True), ("left", False)):
+        ok = reader.send_normalized_data(is_right)
+        logger.info("SendNormalizedData %s glove: %s", hand_name, "OK" if ok else "FAILED (glove not found?)")
 
     task = asyncio.create_task(
         control_loop(client_left, client_right, reader, shutdown_event)
