@@ -65,7 +65,24 @@ class Nova2SensorReader:
                 f"Sensor library not found: {lib_path}\n"
                 "Run `cd scripts && make` to build it first."
             )
-        self._lib = ctypes.CDLL(lib_path)
+        try:
+            self._lib = ctypes.CDLL(lib_path)
+        except OSError as exc:
+            msg = str(exc)
+            if "GLIBC_" in msg:
+                import re
+                versions = re.findall(r"GLIBC_[\d.]+", msg)
+                required = versions[0] if versions else "GLIBC_2.38+"
+                raise OSError(
+                    f"\n"
+                    f"  Cannot load {lib_path}\n"
+                    f"  Required: {required}  (Ubuntu 24.04 / glibc 2.39+)\n"
+                    f"  Your system glibc is too old.\n"
+                    f"\n"
+                    f"  → Run inside Docker instead:\n"
+                    f"      cd scripts && bash run_docker.sh\n"
+                ) from exc
+            raise
 
         # int nova2_sensecom_running()
         self._lib.nova2_sensecom_running.restype  = ctypes.c_int
@@ -194,8 +211,8 @@ async def main_async(reader: Nova2SensorReader) -> None:
 def main() -> None:
     try:
         reader = Nova2SensorReader()
-    except FileNotFoundError as exc:
-        print(exc, file=sys.stderr)
+    except (FileNotFoundError, OSError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
 
     try:
