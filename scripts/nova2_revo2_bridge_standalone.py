@@ -49,6 +49,16 @@ BAUDRATE   = libstark.Baudrate.Baud460800
 CONTROL_HZ = 20          # Hz – how often to send positions to Revo2 hands
 SPEEDS     = [1000] * 6  # Revo2 motor speeds (max = 1000)
 
+# Input/output stability tuning
+EMA_ALPHA = 0.35              # 0..1, higher = faster response, lower = smoother
+OUTPUT_DEADBAND = 6           # Revo2 command steps; suppress tiny back-and-forth jitter
+
+# Forward-mapping fist assistance (keeps "正向映射", but helps slow close reach full command)
+FIST_ASSIST_CHANNELS = {0, 2, 3, 4, 5}  # thumb flex + four fingers (exclude thumb aux)
+FIST_ASSIST_GAMMA = 0.65                 # <1 boosts mid-high values toward close
+FIST_SNAP_THRESHOLD = 0.90               # values above this snap to fully closed (1000)
+OPEN_SNAP_THRESHOLD = 0.01               # tiny values snap to fully open (0)
+
 # Path to the compiled C wrapper (built via `make` in scripts/)
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 SENSOR_LIB = os.path.join(_THIS_DIR, "nova2_sensor_api.so")
@@ -196,20 +206,52 @@ def nova2_to_revo2(values: list[float]) -> list[int]:
     def _clip_0_1000(x: int) -> int:
         return max(0, min(1000, x))
 
-    def fwd(v: float) -> int:
-        return _clip_0_1000(int(max(0.0, min(1.0, v)) * 1000))
+    def fwd(v: float, channel: int) -> int:
+        x = max(0.0, min(1.0, v))
+        if channel in FIST_ASSIST_CHANNELS:
+            x = x ** FIST_ASSIST_GAMMA
+            if x >= FIST_SNAP_THRESHOLD:
+                x = 1.0
+        if x <= OPEN_SNAP_THRESHOLD:
+            x = 0.0
+        return _clip_0_1000(int(round(x * 1000)))
 
     if len(values) < 6:
         values = list(values) + [0.0] * (6 - len(values))
 
     return [
-        fwd(values[1]),  # [0] 大拇指Flex  ← Thumb FlexionProximal (forward)
-        fwd(values[0]),  # [1] 大拇指Aux   ← Thumb Abduction       (direct: 0=adducted, 1=spread)
-        fwd(values[3]),  # [2] 食指        ← Index FlexionDistal   (forward)
-        fwd(values[4]),  # [3] 中指        ← Middle Flexion        (forward)
-        fwd(values[5]),  # [4] 无名指      ← Ring Flexion          (forward)
-        fwd(values[5]),  # [5] 小拇指      ← Ring Flexion          (forward)
+        fwd(values[1], 0),  # [0] 大拇指Flex  ← Thumb FlexionProximal (forward)
+        fwd(values[0], 1),  # [1] 大拇指Aux   ← Thumb Abduction       (direct: 0=adducted, 1=spread)
+        fwd(values[3], 2),  # [2] 食指        ← Index FlexionDistal   (forward)
+        fwd(values[4], 3),  # [3] 中指        ← Middle Flexion        (forward)
+        fwd(values[5], 4),  # [4] 无名指      ← Ring Flexion          (forward)
+        fwd(values[5], 5),  # [5] 小拇指      ← Ring Flexion          (forward)
     ]
+
+
+def ema_step(current: list[float], previous: list[float] | None) -> list[float]:
+    if previous is None:
+        return list(current)
+    n = min(len(current), len(previous))
+    out = [EMA_ALPHA * current[i] + (1.0 - EMA_ALPHA) * previous[i] for i in range(n)]
+    if len(current) > n:
+        out.extend(current[n:])
+    return out
+
+
+def apply_output_deadband(current: list[int], previous: list[int] | None) -> list[int]:
+    if previous is None:
+        return list(current)
+    n = min(len(current), len(previous))
+    out = []
+    for i in range(n):
+        if abs(current[i] - previous[i]) < OUTPUT_DEADBAND:
+            out.append(previous[i])
+        else:
+            out.append(current[i])
+    if len(current) > n:
+        out.extend(current[n:])
+    return out
 
 
 # ── Revo2 async control loop ──────────────────────────────────────────────────
@@ -222,6 +264,10 @@ async def control_loop(
     interval = 1.0 / CONTROL_HZ
     logger.info("Control loop started at %d Hz", CONTROL_HZ)
     loop = asyncio.get_running_loop()
+    rh_ema: list[float] | None = None
+    lh_ema: list[float] | None = None
+    rh_last_pos: list[int] | None = None
+    lh_last_pos: list[int] | None = None
 
     while not shutdown_event.is_set():
         # Run blocking ctypes calls in a thread pool so the asyncio event loop
@@ -238,8 +284,15 @@ async def control_loop(
                 loop.run_in_executor(None, reader.get_normalization_state, False),
             )
         )
-        rh_pos = nova2_to_revo2(rh_raw)
-        lh_pos = nova2_to_revo2(lh_raw)
+        rh_ema = ema_step(rh_raw, rh_ema)
+        lh_ema = ema_step(lh_raw, lh_ema)
+
+        rh_pos = nova2_to_revo2(rh_ema)
+        lh_pos = nova2_to_revo2(lh_ema)
+        rh_pos = apply_output_deadband(rh_pos, rh_last_pos)
+        lh_pos = apply_output_deadband(lh_pos, lh_last_pos)
+        rh_last_pos = list(rh_pos)
+        lh_last_pos = list(lh_pos)
 
         # Print raw glove sensor values so you can verify the glove is streaming.
         # Use print() directly – libstark.init_logging() may raise the logger
