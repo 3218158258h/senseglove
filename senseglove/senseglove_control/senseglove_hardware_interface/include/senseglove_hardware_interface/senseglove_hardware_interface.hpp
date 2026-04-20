@@ -5,6 +5,7 @@
 #include "hardware_interface/system_interface.hpp"
 #include "hardware_interface/types/hardware_component_interface_params.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 
 #include <senseglove_msgs/msg/nova2_waveform_command.hpp>
 
@@ -85,6 +86,7 @@ private:
 
   // Nova 2 custom waveform subscriber
   rclcpp::Subscription<senseglove_msgs::msg::Nova2WaveformCommand>::SharedPtr waveform_sub_;
+  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr normalized_sensor_pub_;
 
   void initialize_glove_data();
   void waveformCallback(const senseglove_msgs::msg::Nova2WaveformCommand::SharedPtr msg);

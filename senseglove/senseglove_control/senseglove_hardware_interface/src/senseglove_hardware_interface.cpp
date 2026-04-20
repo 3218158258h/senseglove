@@ -137,6 +137,12 @@ CallbackReturn SenseGloveHardwareInterface::on_init(
           waveformCallback(msg);
         });
       RCLCPP_INFO(logger, "Subscribed to Nova 2 waveform commands on: %s", waveform_topic.c_str());
+
+      const std::string normalized_topic =
+        std::string(get_node()->get_namespace()) + "/nova2_normalized_input";
+      normalized_sensor_pub_ = get_node()->create_publisher<std_msgs::msg::Float32MultiArray>(
+        normalized_topic, rclcpp::QoS(10).best_effort());
+      RCLCPP_INFO(logger, "Publishing Nova 2 normalized input on: %s", normalized_topic.c_str());
     }
 
     RCLCPP_DEBUG(logger,
@@ -269,6 +275,22 @@ return_type SenseGloveHardwareInterface::read(const rclcpp::Time&, const rclcpp:
     glove_data_.imu_quat[1] = q.GetY();
     glove_data_.imu_quat[2] = q.GetZ();
     glove_data_.imu_quat[3] = q.GetW();
+  }
+
+  if (normalized_sensor_pub_)
+  {
+    std::vector<float> normalized_values;
+    if (robot_->getNova2NormalizedInput(normalized_values))
+    {
+      std_msgs::msg::Float32MultiArray msg;
+      msg.data = std::move(normalized_values);
+      msg.layout.dim.resize(1);
+      msg.layout.dim[0].label = "nova2_normalized_input";
+      msg.layout.dim[0].size = static_cast<uint32_t>(msg.data.size());
+      msg.layout.dim[0].stride = 1U;
+      msg.layout.data_offset = 0U;
+      normalized_sensor_pub_->publish(msg);
+    }
   }
 
   return return_type::OK;
