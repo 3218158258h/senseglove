@@ -190,16 +190,11 @@ class Nova2SensorReader:
 def nova2_to_revo2(values: list[float]) -> list[int]:
     """Map 6 normalised Nova2 values (0-1) → Revo2 positions (0-1000).
 
-    Nova2 convention: 0 = finger fully extended (open), 1 = fully flexed (fist).
-    Revo2 convention: 0 = fist (closed),            1000 = fully open.
-    Therefore the mapping must be INVERTED: revo2 = (1 - nova2) * 1000.
+    Map 0~1 Nova2 values to 0~1000 Revo2 values with forward mapping.
     """
 
     def _clip_0_1000(x: int) -> int:
         return max(0, min(1000, x))
-
-    def inv(v: float) -> int:
-        return _clip_0_1000(int((1.0 - max(0.0, min(1.0, v))) * 1000))
 
     def fwd(v: float) -> int:
         return _clip_0_1000(int(max(0.0, min(1.0, v)) * 1000))
@@ -208,12 +203,12 @@ def nova2_to_revo2(values: list[float]) -> list[int]:
         values = list(values) + [0.0] * (6 - len(values))
 
     return [
-        inv(values[1]),  # [0] 大拇指Flex  ← Thumb FlexionProximal (inverted)
+        fwd(values[1]),  # [0] 大拇指Flex  ← Thumb FlexionProximal (forward)
         fwd(values[0]),  # [1] 大拇指Aux   ← Thumb Abduction       (direct: 0=adducted, 1=spread)
-        inv(values[3]),  # [2] 食指        ← Index FlexionDistal   (inverted)
-        inv(values[4]),  # [3] 中指        ← Middle Flexion        (inverted)
-        inv(values[5]),  # [4] 无名指      ← Ring Flexion          (inverted)
-        inv(values[5]),  # [5] 小拇指      ← Ring Flexion          (inverted)
+        fwd(values[3]),  # [2] 食指        ← Index FlexionDistal   (forward)
+        fwd(values[4]),  # [3] 中指        ← Middle Flexion        (forward)
+        fwd(values[5]),  # [4] 无名指      ← Ring Flexion          (forward)
+        fwd(values[5]),  # [5] 小拇指      ← Ring Flexion          (forward)
     ]
 
 
