@@ -2,19 +2,19 @@
 """
 nova2_revo2_bridge_standalone.py
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Standalone bridge: SenseGlove Nova2 → Revo2 Dexterous Hand (dual hand).
+独立桥接脚本：SenseGlove Nova2 → Revo2 灵巧手（双手）。
 
-Does NOT require ROS2.  Reads normalised finger data directly from the
-SenseGlove C++ SDK via a thin ctypes wrapper (nova2_sensor_api.so).
+不依赖 ROS2。通过轻量 ctypes 封装（nova2_sensor_api.so）
+直接从 SenseGlove C++ SDK 读取归一化手指数据。
 
-Prerequisites
-─────────────
-1. SenseCom must be running before this script starts.
-2. Build the C wrapper once:
+前置条件
+────────
+1. 启动脚本前必须先运行 SenseCom。
+2. 先编译一次 C 封装：
        cd scripts && make
-3. The Revo2 Python SDK (revo2_utils, utils) must be on PYTHONPATH.
+3. Revo2 Python SDK（revo2_utils, utils）需在 PYTHONPATH 中。
 
-Sensor layout  (nova2_sensor_api returns 6 floats, 0.0 – 1.0):
+传感器布局（nova2_sensor_api 返回 6 个 float，范围 0.0 – 1.0）：
    [0]  Thumb   Abduction        (内收/外展)
    [1]  Thumb   FlexionProximal  (屈伸)
    [2]  Index   FlexionProximal
@@ -22,7 +22,7 @@ Sensor layout  (nova2_sensor_api returns 6 floats, 0.0 – 1.0):
    [4]  Middle  Flexion
    [5]  Ring    Flexion          ← shared for ring AND pinky
 
-Revo2 6-DOF positions  (0 = fist, 1000 = fully open):
+Revo2 6-DOF 位置（0 = 握拳，1000 = 完全张开）：
    [0]  大拇指Flex  ← nova2[1] direct
    [1]  大拇指Aux   ← nova2[0] direct
    [2]  食指        ← nova2[3] direct
@@ -39,40 +39,40 @@ import sys
 from revo2_utils import logger, libstark
 from utils import setup_shutdown_event
 
-# ── Configuration ─────────────────────────────────────────────────────────────
+# ── 配置 ───────────────────────────────────────────────────────────────────────
 RIGHT_PORT = "/dev/ttyUSB0"
 LEFT_PORT  = "/dev/ttyUSB1"
 RIGHT_ID   = 0x7F
 LEFT_ID    = 0x7E
 BAUDRATE   = libstark.Baudrate.Baud460800
 
-CONTROL_HZ = 20          # Hz – how often to send positions to Revo2 hands
-SPEEDS     = [1000] * 6  # Revo2 motor speeds (max = 1000)
+CONTROL_HZ = 20          # Hz：下发到 Revo2 的频率
+SPEEDS     = [1000] * 6  # Revo2 电机速度（最大 1000）
 
-# Input/output stability tuning
-EMA_ALPHA = 0.35              # 0..1, higher = faster response, lower = smoother
-OUTPUT_DEADBAND = 6           # Revo2 command steps; suppress tiny back-and-forth jitter
+# 输入/输出稳定性参数
+EMA_ALPHA = 0.35              # 0..1，越大响应越快，越小越平滑
+OUTPUT_DEADBAND = 6           # Revo2 指令死区，抑制微小来回抖动
 
-# Forward-mapping fist assistance (keeps "正向映射", but helps slow close reach full command)
-FIST_ASSIST_CHANNELS = {0, 2, 3, 4, 5}  # thumb flex + four fingers (exclude thumb aux)
-FIST_ASSIST_GAMMA = 0.65                 # <1 boosts mid-high values toward close
-FIST_SNAP_THRESHOLD = 0.90               # values above this snap to fully closed (1000)
-OPEN_SNAP_THRESHOLD = 0.01               # tiny values snap to fully open (0)
+# 正向映射握拳增强（保持“正向映射”，但让慢速握拳更容易达到满指令）
+FIST_ASSIST_CHANNELS = {0, 2, 3, 4, 5}  # 拇指屈伸 + 四指（不包含拇指辅助通道）
+FIST_ASSIST_GAMMA = 0.65                 # <1 会增强中高段，向“握拳”方向推进
+FIST_SNAP_THRESHOLD = 0.90               # 高于该值直接吸附到完全握拳（1000）
+OPEN_SNAP_THRESHOLD = 0.01               # 低于该值直接吸附到完全张开（0）
 
-# Path to the compiled C wrapper (built via `make` in scripts/)
+# 已编译 C 封装路径（在 scripts/ 下执行 `make` 生成）
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 SENSOR_LIB = os.path.join(_THIS_DIR, "nova2_sensor_api.so")
 
 
-# ── ctypes wrapper ─────────────────────────────────────────────────────────────
+# ── ctypes 封装 ────────────────────────────────────────────────────────────────
 class Nova2SensorReader:
-    """Thin Python wrapper around nova2_sensor_api.so."""
+    """nova2_sensor_api.so 的轻量 Python 封装。"""
 
     def __init__(self, lib_path: str = SENSOR_LIB) -> None:
         if not os.path.exists(lib_path):
             raise FileNotFoundError(
                 f"Sensor library not found: {lib_path}\n"
-                "Run `cd scripts && make` to build it first."
+                "请先运行 `cd scripts && make` 进行编译。"
             )
         try:
             self._lib = ctypes.CDLL(lib_path)
@@ -81,16 +81,15 @@ class Nova2SensorReader:
             if "undefined symbol" in msg:
                 raise OSError(
                     f"\n"
-                    f"  Cannot load {lib_path}: {msg}\n"
+                     f"  无法加载 {lib_path}: {msg}\n"
                     f"\n"
-                    f"  C++ ABI mismatch: the SenseGlove-API-master v22 libs were compiled\n"
-                    f"  with Clang/libc++ (std::__1 ABI). The wrapper must be compiled with\n"
-                    f"  the same ABI.  Rebuild using clang++ + libc++:\n"
+                     f"  C++ ABI 不匹配：SenseGlove-API-master v22 库使用 Clang/libc++\n"
+                     f"  （std::__1 ABI）编译。封装也必须使用同 ABI。请用 clang++ + libc++ 重编译：\n"
                     f"\n"
-                    f"      # Ubuntu: apt install clang libc++-dev libc++abi-dev\n"
+                     f"      # Ubuntu: apt install clang libc++-dev libc++abi-dev\n"
                     f"      cd <repo_root>/scripts && make clean && make\n"
                     f"\n"
-                    f"  Do NOT compile with plain g++ – it uses libstdc++ (different ABI).\n"
+                     f"  不要使用普通 g++ 编译——它使用 libstdc++（ABI 不同）。\n"
                 ) from exc
             if "GLIBC_" in msg:
                 import re
@@ -98,17 +97,17 @@ class Nova2SensorReader:
                 required = versions[0] if versions else "GLIBC_2.38+"
                 raise OSError(
                     f"\n"
-                    f"  Cannot load {lib_path}\n"
-                    f"  Required: {required}\n"
-                    f"  Your system glibc is too old.\n"
+                     f"  无法加载 {lib_path}\n"
+                     f"  需要版本：{required}\n"
+                     f"  当前系统 glibc 版本过低。\n"
                     f"\n"
-                    f"  The Makefile defaults to SenseGlove-API-master/lib/linux/v22 libs\n"
-                    f"  (requires only GLIBC_2.17, compatible with Ubuntu 22.04+).\n"
-                    f"  Rebuild the wrapper:\n"
+                     f"  Makefile 默认链接 SenseGlove-API-master/lib/linux/v22 库\n"
+                     f"  （仅需 GLIBC_2.17，兼容 Ubuntu 22.04+）。\n"
+                     f"  请重编译封装：\n"
                     f"      cd <repo_root>/scripts && make\n"
                     f"\n"
-                    f"  If you built with the old senseglove_api Ubuntu libs (requires\n"
-                    f"  GLIBC_2.38/2.39), run inside Docker instead:\n"
+                     f"  如果你链接了旧版 senseglove_api Ubuntu 库（需要\n"
+                     f"  GLIBC_2.38/2.39），请改为在 Docker 中运行：\n"
                     f"      bash scripts/run_docker.sh\n"
                 ) from exc
             raise
@@ -145,11 +144,11 @@ class Nova2SensorReader:
         return bool(self._lib.nova2_sensecom_running())
 
     def send_normalized_data(self, right_hand: bool) -> bool:
-        """Command the glove to start streaming normalised data. Call once at startup."""
+        """命令手套开始输出归一化数据（启动时调用一次）。"""
         return bool(self._lib.nova2_send_normalized_data(1 if right_hand else 0))
 
     def get_normalized(self, right_hand: bool) -> list[float]:
-        """Return a list of 6 floats (0-1), or [0]*6 if the glove is unavailable."""
+        """返回 6 个浮点数（0-1）；手套不可用时返回 [0]*6。"""
         buf = (ctypes.c_float * 6)()
         length = ctypes.c_int(0)
         ok = self._lib.nova2_get_normalized_input(
@@ -161,7 +160,7 @@ class Nova2SensorReader:
             return [0.0] * 6
         return list(buf[: length.value])
 
-    # Normalization state codes (ENormalizationState in NormalizationState.hpp):
+    # 归一化状态码（见 NormalizationState.hpp 的 ENormalizationState）
     _NORM_STATE_NAMES = {
         -1: "GLOVE_NOT_FOUND",
         -2: "SENSOR_DATA_UNAVAILABLE",
@@ -173,16 +172,16 @@ class Nova2SensorReader:
     }
 
     def get_normalization_state(self, right_hand: bool) -> tuple[int, str]:
-        """Return (code, name) for the current normalization state of the glove."""
+        """返回当前手套归一化状态 (code, name)。"""
         code = self._lib.nova2_get_normalization_state(1 if right_hand else 0)
         name = self._NORM_STATE_NAMES.get(code, f"state_{code}")
         return code, name
 
     def get_raw_sensor_data(self, right_hand: bool) -> list[float]:
-        """Return 6 raw sensor values from GetSensorData (bypasses normalization).
+        """返回 GetSensorData 的 6 路原始值（不经过归一化）。
 
-        Values are NOT guaranteed to be in [0, 1] when the glove has not finished
-        normalization.  Use to verify the glove hardware is live.
+        当手套尚未完成归一化时，返回值不保证在 [0, 1] 范围内。
+        可用于确认手套硬件是否在线。
         """
         buf = (ctypes.c_float * 6)()
         length = ctypes.c_int(0)
@@ -196,11 +195,11 @@ class Nova2SensorReader:
         return list(buf[: length.value])
 
 
-# ── Sensor → Revo2 conversion ─────────────────────────────────────────────────
+# ── 传感器 → Revo2 转换 ────────────────────────────────────────────────────────
 def nova2_to_revo2(values: list[float]) -> list[int]:
-    """Map 6 normalised Nova2 values (0-1) → Revo2 positions (0-1000).
+    """将 6 路 Nova2 归一化值（0-1）映射到 Revo2 位置（0-1000）。
 
-    Map 0~1 Nova2 values to 0~1000 Revo2 values with forward mapping.
+    使用正向映射：0~1 Nova2 值 → 0~1000 Revo2 指令值。
     """
 
     def _clip_0_1000(x: int) -> int:
@@ -254,7 +253,7 @@ def apply_output_deadband(current: list[int], previous: list[int] | None) -> lis
     return out
 
 
-# ── Revo2 async control loop ──────────────────────────────────────────────────
+# ── Revo2 异步控制循环 ─────────────────────────────────────────────────────────
 async def control_loop(
     client_left,
     client_right,
@@ -262,7 +261,7 @@ async def control_loop(
     shutdown_event: asyncio.Event,
 ) -> None:
     interval = 1.0 / CONTROL_HZ
-    logger.info("Control loop started at %d Hz", CONTROL_HZ)
+    logger.info("控制循环已启动，频率：%d Hz", CONTROL_HZ)
     loop = asyncio.get_running_loop()
     rh_ema: list[float] | None = None
     lh_ema: list[float] | None = None
@@ -270,10 +269,9 @@ async def control_loop(
     lh_last_pos: list[int] | None = None
 
     while not shutdown_event.is_set():
-        # Run blocking ctypes calls in a thread pool so the asyncio event loop
-        # remains free to process Revo2 serial I/O.  Without this, GIL-holding
-        # ctypes calls would starve the Modbus transport layer, causing every
-        # set_finger_positions_and_speeds call after the first to time out.
+        # 将阻塞 ctypes 调用放入线程池，避免占用 asyncio 事件循环。
+        # 否则持有 GIL 的 ctypes 调用会阻塞 Modbus 传输层，导致除首次外
+        # 的 set_finger_positions_and_speeds 调用频繁超时。
         rh_raw, lh_raw, rh_raw_hw, lh_raw_hw, rh_norm_state, lh_norm_state = (
             await asyncio.gather(
                 loop.run_in_executor(None, reader.get_normalized, True),
@@ -294,24 +292,33 @@ async def control_loop(
         rh_last_pos = list(rh_pos)
         lh_last_pos = list(lh_pos)
 
-        # Print raw glove sensor values so you can verify the glove is streaming.
-        # Use print() directly – libstark.init_logging() may raise the logger
-        # threshold above INFO, silencing logger.info() calls.
+        # 打印手套数据，确认手套在持续输出。
+        # 这里直接用 print()，因为 libstark.init_logging() 可能把日志级别
+        # 提升到 INFO 以上，导致 logger.info() 不可见。
         rh_fmt     = " ".join(f"{v:.3f}" for v in rh_raw)
         lh_fmt     = " ".join(f"{v:.3f}" for v in lh_raw)
         rh_hw_fmt  = " ".join(f"{v:.3f}" for v in rh_raw_hw)
         lh_hw_fmt  = " ".join(f"{v:.3f}" for v in lh_raw_hw)
-        print(f"GLOVE norm  RH[{rh_fmt}]  LH[{lh_fmt}]  |  state RH={rh_norm_state[1]} LH={lh_norm_state[1]}", flush=True)
-        print(f"GLOVE raw   RH[{rh_hw_fmt}]  LH[{lh_hw_fmt}]", flush=True)
-        print(f"REVO2 pos   RH{rh_pos}  LH{lh_pos}", flush=True)
+        print(f"手套归一化  右[{rh_fmt}]  左[{lh_fmt}]  |  状态 右={rh_norm_state[1]} 左={lh_norm_state[1]}", flush=True)
+        print(f"手套原始值  右[{rh_hw_fmt}]  左[{lh_hw_fmt}]", flush=True)
+        print(f"REVO2 目标  右{rh_pos}  左{lh_pos}", flush=True)
 
         try:
-            await asyncio.gather(
-                client_right.set_finger_positions_and_speeds(RIGHT_ID, rh_pos, SPEEDS),
-                client_left.set_finger_positions_and_speeds(LEFT_ID,  lh_pos, SPEEDS),
+            # 顺序下发并检查返回值，便于定位“目标值正确但执行不对”的问题。
+            right_ret = await client_right.set_finger_positions_and_speeds(
+                RIGHT_ID, list(rh_pos), SPEEDS
             )
+            left_ret = await client_left.set_finger_positions_and_speeds(
+                LEFT_ID, list(lh_pos), SPEEDS
+            )
+            if not right_ret or not left_ret:
+                print(
+                    f"下发返回异常：右手={right_ret!r} 左手={left_ret!r}  |  "
+                    f"右目标={rh_pos} 左目标={lh_pos}",
+                    flush=True,
+                )
         except Exception as exc:  # noqa: BLE001
-            logger.error("Error sending positions: %s", exc)
+            logger.error("下发位置指令失败：%s", exc)
 
         await asyncio.sleep(interval)
 
@@ -321,29 +328,29 @@ async def main_async(reader: Nova2SensorReader) -> None:
     shutdown_event = setup_shutdown_event(logger)
 
     if not reader.sensecom_running():
-        logger.critical("SenseCom is not running.  Please start it first.")
+        logger.critical("SenseCom 未运行，请先启动。")
         sys.exit(1)
 
     client_left  = await libstark.modbus_open(LEFT_PORT,  BAUDRATE)
     client_right = await libstark.modbus_open(RIGHT_PORT, BAUDRATE)
     if not client_left or not client_right:
-        logger.critical("Failed to open one or both Revo2 serial ports.")
+        logger.critical("打开 Revo2 串口失败（单侧或双侧）。")
         sys.exit(1)
 
     left_info  = await client_left.get_device_info(LEFT_ID)
     right_info = await client_right.get_device_info(RIGHT_ID)
     if not left_info or not right_info:
-        logger.critical("Failed to get Revo2 device info.")
+        logger.critical("读取 Revo2 设备信息失败。")
         sys.exit(1)
 
-    logger.info("Left  hand: %s", left_info.description)
-    logger.info("Right hand: %s", right_info.description)
+    logger.info("左手设备：%s", left_info.description)
+    logger.info("右手设备：%s", right_info.description)
 
-    # Command both gloves to start streaming normalised sensor data.
-    # Without this the SDK may return stale/default values instead of live readings.
-    for hand_name, is_right in (("right", True), ("left", False)):
+    # 命令双手开始输出归一化数据。
+    # 否则 SDK 可能返回默认值/旧值，而不是实时数据。
+    for hand_name, is_right in (("右手", True), ("左手", False)):
         ok = reader.send_normalized_data(is_right)
-        logger.info("SendNormalizedData %s glove: %s", hand_name, "OK" if ok else "FAILED (glove not found?)")
+        logger.info("SendNormalizedData %s：%s", hand_name, "成功" if ok else "失败（可能未找到手套）")
 
     task = asyncio.create_task(
         control_loop(client_left, client_right, reader, shutdown_event)
@@ -354,7 +361,7 @@ async def main_async(reader: Nova2SensorReader) -> None:
     await asyncio.gather(task, return_exceptions=True)
     await client_left.modbus_close()
     await client_right.modbus_close()
-    logger.info("Done.")
+    logger.info("已退出。")
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
@@ -368,7 +375,7 @@ def main() -> None:
     try:
         asyncio.run(main_async(reader))
     except KeyboardInterrupt:
-        logger.info("User interrupted")
+        logger.info("用户中断")
     sys.exit(0)
 
 
