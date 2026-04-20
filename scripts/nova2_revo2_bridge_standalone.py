@@ -195,11 +195,14 @@ def nova2_to_revo2(values: list[float]) -> list[int]:
     Therefore the mapping must be INVERTED: revo2 = (1 - nova2) * 1000.
     """
 
+    def _clip_0_1000(x: int) -> int:
+        return max(0, min(1000, x))
+
     def inv(v: float) -> int:
-        return int((1.0 - max(0.0, min(1.0, v))) * 1000)
+        return _clip_0_1000(int((1.0 - max(0.0, min(1.0, v))) * 1000))
 
     def fwd(v: float) -> int:
-        return int(max(0.0, min(1.0, v)) * 1000)
+        return _clip_0_1000(int(max(0.0, min(1.0, v)) * 1000))
 
     if len(values) < 6:
         values = list(values) + [0.0] * (6 - len(values))
@@ -253,28 +256,6 @@ async def control_loop(
         print(f"GLOVE norm  RH[{rh_fmt}]  LH[{lh_fmt}]  |  state RH={rh_norm_state[1]} LH={lh_norm_state[1]}", flush=True)
         print(f"GLOVE raw   RH[{rh_hw_fmt}]  LH[{lh_hw_fmt}]", flush=True)
         print(f"REVO2 pos   RH{rh_pos}  LH{lh_pos}", flush=True)
-
-        # ENormalizationState: 5 = NormalizationFinished.
-        # In any other state (especially 2 = SendingRawData) the SDK returns
-        # raw-ADC values clamped to [0, 1] – these are NOT real finger angles.
-        # Sending those bogus values to Revo2 causes a fist on startup.
-        # Wait until both gloves have finished normalization before commanding.
-        _NORM_FINISHED = 5
-        rh_ready = (rh_norm_state[0] == _NORM_FINISHED)
-        lh_ready = (lh_norm_state[0] == _NORM_FINISHED)
-        if not rh_ready or not lh_ready:
-            waiting = []
-            if not rh_ready:
-                waiting.append(f"RH({rh_norm_state[1]})")
-            if not lh_ready:
-                waiting.append(f"LH({lh_norm_state[1]})")
-            print(
-                f"[WAITING] Glove(s) not yet normalized: {', '.join(waiting)}. "
-                "Open SenseCom → calibrate glove → confirm, then re-run.",
-                flush=True,
-            )
-            await asyncio.sleep(interval)
-            continue
 
         try:
             await asyncio.gather(
